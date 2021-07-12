@@ -380,8 +380,12 @@ writexl::write_xlsx(indicadores, 'out/indicadores/indicadores_mun_ce.xlsx')
 
 write_rds(
   indicadores, 
-  here::here('out/indicadores/indicadores_mun_ce.xlsx')
+  here::here('out/indicadores/indicadores_mun_ce.rds')
 )
 
-
-
+write_rds(
+  balancete_uf_quadrimestral,
+  here::here(
+    "out/dados_consolidados/balancetes/quadrimestral/balancete_uf_quadrimestral.rds"
+  )
+)
