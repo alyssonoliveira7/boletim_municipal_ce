@@ -374,6 +374,124 @@ indicadores <- municipios %>%
   left_join(indicador_6_mun, by = c("date", "cod_ibge")) %>% 
   arrange(cod_ibge)
 
+# Tratando - Balancetes ----------------------------------------------
+
+balancete_uf_quadrimestral <- balancete_uf_quadrimestral %>% 
+  select(-tp_conta) %>% 
+  mutate(
+    conta = fct_relevel(
+      conta,
+      "receitas_correntes", "receitas_tributarias", "iptu", "iss", 'transferencias_do_fundeb',
+      "itbi", "outros_impostos", "transferencias_correntes", "cota_parte_do_fpm",
+      "cota_parte_do_icms", "demais_transferencias", "demais_rc", "receitas_de_capital",
+      "operacoes_de_credito", "transferencias_de_capital", "demais_rec_capital",
+      "despesas_correntes", "desp_total", "pessoal_e_encargos_sociais",
+      "juros_e_encargos_da_divida", "outras_despesas_correntes", "despesas_de_capital",
+      "investimentos", "demais_inversoes_financeiras", "amortizacao_da_divida"
+    )
+  ) %>% 
+  arrange(date, conta) %>% 
+  mutate(
+    conta = fct_recode(
+      conta,
+      "Receitas Correntes" = "receitas_correntes",
+      "Receitas Tributárias" = "receitas_tributarias",
+      "IPTU" = "iptu",
+      "ISS" = "iss",
+      "ITBI" = "itbi",
+      'Transferências do FUNDEB' = 'transferencias_do_fundeb',
+      "Outros Impostos" = "outros_impostos",
+      "Transferencias Correntes" = "transferencias_correntes",
+      "Cota Parte do FPM" = "cota_parte_do_fpm",
+      "Cota Parte do ICMS" = "cota_parte_do_icms",
+      "Demais Transferências" = "demais_transferencias",
+      "Demais Receitas Correntes" = "demais_rc",
+      "Receitas de Capital" = "receitas_de_capital",
+      "Operações de Crédito" = "operacoes_de_credito",
+      "Transferência de Capital" = "transferencias_de_capital",
+      "Demais Receitas de Capital" = "demais_rec_capital",
+      "Despesas Correntes" = "despesas_correntes",
+      "Despesa Total" = "desp_total",
+      "Pessoal e Encargos Sociais" = "pessoal_e_encargos_sociais",
+      "Juros e Encargos da Dívida" = "juros_e_encargos_da_divida",
+      "Outras Despesas Correntes" = "outras_despesas_correntes",
+      "Despesas de Capital" = "despesas_de_capital",
+      "Investimentos" = "investimentos",
+      "Demais Inversões Financeiras" = "demais_inversoes_financeiras",
+      "Amortização da Dívida" = "amortizacao_da_divida"
+    )
+  )
+
+
+balancete_mun_quadrimestral <- balancete_mun_quadrimestral %>% 
+  select(-tp_conta) %>% 
+  mutate(
+    conta = fct_relevel(
+      conta,
+      "receitas_correntes", "receitas_tributarias", "iptu", "iss", 'transferencias_do_fundeb',
+      "itbi", "outros_impostos", "transferencias_correntes", "cota_parte_do_fpm",
+      "cota_parte_do_icms", "demais_transferencias", "demais_rc", "receitas_de_capital",
+      "operacoes_de_credito", "transferencias_de_capital", "demais_rec_capital",
+      "despesas_correntes", "desp_total", "pessoal_e_encargos_sociais",
+      "juros_e_encargos_da_divida", "outras_despesas_correntes", "despesas_de_capital",
+      "investimentos", "demais_inversoes_financeiras", "amortizacao_da_divida"
+    )
+  ) %>% 
+  arrange(date, cod_ibge, conta) %>% 
+  mutate(
+    conta = fct_recode(
+      conta,
+      "Receitas Correntes" = "receitas_correntes",
+      "Receitas Tributárias" = "receitas_tributarias",
+      "IPTU" = "iptu",
+      "ISS" = "iss",
+      "ITBI" = "itbi",
+      'Transferências do FUNDEB' = 'transferencias_do_fundeb',
+      "Outros Impostos" = "outros_impostos",
+      "Transferencias Correntes" = "transferencias_correntes",
+      "Cota Parte do FPM" = "cota_parte_do_fpm",
+      "Cota Parte do ICMS" = "cota_parte_do_icms",
+      "Demais Transferências" = "demais_transferencias",
+      "Demais Receitas Correntes" = "demais_rc",
+      "Receitas de Capital" = "receitas_de_capital",
+      "Operações de Crédito" = "operacoes_de_credito",
+      "Transferência de Capital" = "transferencias_de_capital",
+      "Demais Receitas de Capital" = "demais_rec_capital",
+      "Despesas Correntes" = "despesas_correntes",
+      "Despesa Total" = "desp_total",
+      "Pessoal e Encargos Sociais" = "pessoal_e_encargos_sociais",
+      "Juros e Encargos da Dívida" = "juros_e_encargos_da_divida",
+      "Outras Despesas Correntes" = "outras_despesas_correntes",
+      "Despesas de Capital" = "despesas_de_capital",
+      "Investimentos" = "investimentos",
+      "Demais Inversões Financeiras" = "demais_inversoes_financeiras",
+      "Amortização da Dívida" = "amortizacao_da_divida"
+    )
+  )
+
+balancete_uf_quadrimestral %>% 
+  filter(date == '2020-04-01' | date == '2021-04-01') %>% 
+  mutate(
+    ano = get_year(date)
+  ) %>% 
+  select(-date) %>% 
+  pivot_wider(
+    names_from = ano, 
+    values_from = valor
+  )
+
+
+balancete_mun_quadrimestral %>% 
+  filter(date == '2020-04-01' | date == '2021-04-01', cod_ibge == 2304400) %>% 
+  mutate(
+    ano = get_year(date)
+  ) %>% 
+  select(-date) %>% 
+  pivot_wider(
+    names_from = ano, 
+    values_from = valor
+  )
+
 # Save data ----------------------------------------------------------
 
 writexl::write_xlsx(indicadores, 'out/indicadores/indicadores_mun_ce.xlsx')

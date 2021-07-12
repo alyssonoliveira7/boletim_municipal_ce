@@ -1016,6 +1016,7 @@ balancete_receitas.wide <- balancete_receitas %>%
     RREO6TransferenciasCorrentes,
     RREO6CotaParteDoFPM,
     RREO6CotaParteDoICMS,
+    TransferenciasDoFUNDEB,
     demais_transferencias,
     demais_rc,
     RREO6ReceitasDeCapital,
