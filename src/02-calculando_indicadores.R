@@ -7,10 +7,29 @@ gc()
 # Pacotes ------------------------------------------------------------
 
 library(tidyverse)
+library(clock)
 
 # Parâmetros ---------------------------------------------------------
 
 date_filter <- '2018-01-01'
+
+# Importando - dados municipais --------------------------------------
+
+mun <- readxl::read_excel(
+  here::here('data/municipios/RELATORIO_DTB_BRASIL_MUNICIPIO.xls')
+)
+
+mun <- mun %>% 
+  janitor::clean_names() %>% 
+  select(
+    cod_uf = uf_1, 
+    uf = nome_uf, 
+    cod_ibge = codigo_municipio_completo, 
+    mun = nome_municipio
+  ) %>% 
+  mutate(
+    cod_ibge = as.character(cod_ibge)
+  )
 
 # Importando - Balancetes --------------------------------------------
 
@@ -374,6 +393,12 @@ indicadores <- municipios %>%
   left_join(indicador_6_mun, by = c("date", "cod_ibge")) %>% 
   arrange(cod_ibge)
 
+indicadores <- indicadores %>% 
+  left_join(mun, by = 'cod_ibge') %>% 
+  relocate(c(cod_uf, uf), .before = cod_ibge) %>% 
+  relocate(mun, .after = cod_ibge)
+
+
 # Tratando - Balancetes ----------------------------------------------
 
 balancete_uf_quadrimestral <- balancete_uf_quadrimestral %>% 
@@ -439,6 +464,7 @@ balancete_mun_quadrimestral <- balancete_mun_quadrimestral %>%
   ) %>% 
   arrange(date, cod_ibge, conta) %>% 
   mutate(
+    cod_ibge = as.character(cod_ibge),
     conta = fct_recode(
       conta,
       "Receitas Correntes" = "receitas_correntes",
@@ -467,7 +493,11 @@ balancete_mun_quadrimestral <- balancete_mun_quadrimestral %>%
       "Demais Inversões Financeiras" = "demais_inversoes_financeiras",
       "Amortização da Dívida" = "amortizacao_da_divida"
     )
-  )
+  ) %>% 
+  left_join(mun, by = 'cod_ibge') %>% 
+  relocate(c(cod_uf, uf), .before = cod_ibge) %>% 
+  relocate(mun, .after = cod_ibge)
+  
 
 balancete_uf_quadrimestral %>% 
   filter(date == '2020-04-01' | date == '2021-04-01') %>% 
@@ -505,5 +535,12 @@ write_rds(
   balancete_uf_quadrimestral,
   here::here(
     "out/dados_consolidados/balancetes/quadrimestral/balancete_uf_quadrimestral.rds"
+  )
+)
+
+write_rds(
+  balancete_mun_quadrimestral,
+  here::here(
+    "out/dados_consolidados/balancetes/quadrimestral/balancete_mun_quadrimestral.rds"
   )
 )

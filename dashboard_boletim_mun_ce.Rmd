@@ -3,9 +3,6 @@ title: "Boletim Fiscal dos Municípios Cearenses"
 runtime: shiny
 output: 
   flexdashboard::flex_dashboard:
-    theme:
-      version: 4
-      bootswatch: minty
     orientation: columns
     vertical_layout: fill
 ---
@@ -24,6 +21,7 @@ knitr::opts_chunk$set(cache=TRUE,
 ```{r loadlibaries, include=FALSE}
 
 library(flexdashboard)
+library(kableExtra)
 library(tidyverse)
 library(shiny)
 library(DT)
@@ -36,28 +34,110 @@ indicadores <- read_rds(
   here::here('out/indicadores/indicadores_mun_ce.rds')
 )
 
+indicadores <- indicadores %>% 
+  mutate(
+    ano = clock::get_year(date),
+    mes = clock::get_month(date),
+    quadrimestre = case_when(
+      mes == 2 ~ 1,
+      mes == 4 ~ 1,
+      mes == 6 ~ 2,
+      mes == 8 ~ 2,
+      mes == 10 ~ 3,
+      mes == 12 ~ 3
+    )
+  )
+
 balancete_uf <- readr::read_rds(
     here::here(
     "out/dados_consolidados/balancetes/quadrimestral/balancete_uf_quadrimestral.rds"
   )
-)
+) %>% 
+    mutate(
+    ano = clock::get_year(date),
+    mes = clock::get_month(date),
+    quadrimestre = case_when(
+      mes == 2 ~ 1,
+      mes == 4 ~ 1,
+      mes == 6 ~ 2,
+      mes == 8 ~ 2,
+      mes == 10 ~ 3,
+      mes == 12 ~ 3
+    ),
+    .after = date
+  )
 
-balancete_mun <- readr::read_csv2(
-  here::here('out/dados_consolidados/balancetes/balancete_mun.csv')
-)
+
+
+balancete_mun <- readr::read_rds(
+  here::here('out/dados_consolidados/balancetes/quadrimestral/balancete_mun_quadrimestral.rds')
+) %>% 
+      mutate(
+    ano = clock::get_year(date),
+    mes = clock::get_month(date),
+    quadrimestre = case_when(
+      mes == 2 ~ 1,
+      mes == 4 ~ 1,
+      mes == 6 ~ 2,
+      mes == 8 ~ 2,
+      mes == 10 ~ 3,
+      mes == 12 ~ 3
+    ),
+    .after = date
+  )
 
 
 ```
 
-Column {data-width=650}
+Estado do Ceará
+=======================================================================
+
+
+Column {.sidebar}
 -----------------------------------------------------------------------
 
-### Chart A
+### Parâmetros
 
 ```{r}
 
-balancete_uf
+nome_mun <- indicadores %>% 
+  count(mun)
 
+ano <- indicadores %>% 
+  count(ano)
+
+quadrimestre <- indicadores %>% 
+  count(quadrimestre)
+
+selectInput('indicador_fiscal', 'Indicadores Fiscais', names(indicadores)[6:11])
+
+selectInput('ano', 'Ano', ano$ano, selected = '2021')
+
+selectInput('quad', 'Quadrimestre', quadrimestre$quadrimestre)
+
+```
+
+
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Balancete do Estado do Ceará
+
+```{r table_ce, cache=FALSE}
+
+renderTable({
+    balancete_uf %>% 
+    select(-date, -mes) %>% 
+    mutate(quadrimestre = as.character(quadrimestre)) %>% 
+    filter(ano == input$ano, quadrimestre == input$quad) %>% 
+    rename(
+      Ano = ano,
+      Quadrimestre = quadrimestre,
+      Conta = conta,
+      Valor = valor
+    )
+})
 
 ```
 
@@ -67,6 +147,82 @@ Column {data-width=350}
 ### Chart B
 
 ```{r}
+
+
+```
+
+### Chart C
+
+```{r}
+
+```
+
+Municípios Cearenses
+=======================================================================
+
+
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+### Parâmetros
+
+```{r}
+
+nome_mun <- indicadores %>% 
+  count(mun)
+
+ano <- indicadores %>% 
+  count(ano)
+
+quadrimestre <- indicadores %>% 
+  count(quadrimestre)
+
+selectInput('indicador_fiscal_mun', 'Indicadores Fiscais', names(indicadores)[6:11])
+
+selectInput('mun', 'Municípios Cearenses', nome_mun$mun, selected = 'Fortaleza')
+
+selectInput('ano_mun', 'Ano', ano$ano, selected = '2021')
+
+selectInput('quad_mun', 'Quadrimestre', quadrimestre$quadrimestre)
+
+```
+
+
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Balancete dos Municípios Cearenses
+
+```{r table_mun, cache=FALSE}
+
+renderTable({
+    balancete_mun %>% 
+    mutate(quadrimestre = as.character(quadrimestre)) %>% 
+    filter(
+      ano == input$ano_mun, 
+      quadrimestre == input$quad_mun,
+      mun == input$mun
+      ) %>% 
+    select(conta, valor) %>%
+    rename(
+      # Ano = ano,
+      # Quadrimestre = quadrimestre,
+      # 'Município' = mun,
+      Conta = conta,
+      Valor = valor
+    )
+})
+
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Chart B
+
+```{r}
+
 
 ```
 
