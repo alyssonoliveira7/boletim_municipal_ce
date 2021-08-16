@@ -21,10 +21,10 @@ knitr::opts_chunk$set(cache=TRUE,
 ```{r loadlibaries, include=FALSE}
 
 library(flexdashboard)
-library(kableExtra)
 library(tidyverse)
+library(clock)
 library(shiny)
-library(DT)
+library(scales)
 
 ```
 
@@ -34,64 +34,24 @@ indicadores <- read_rds(
   here::here('out/indicadores/indicadores_mun_ce.rds')
 )
 
-indicadores <- indicadores %>% 
-  mutate(
-    ano = clock::get_year(date),
-    mes = clock::get_month(date),
-    quadrimestre = case_when(
-      mes == 2 ~ 1,
-      mes == 4 ~ 1,
-      mes == 6 ~ 2,
-      mes == 8 ~ 2,
-      mes == 10 ~ 3,
-      mes == 12 ~ 3
-    )
-  )
 
 balancete_uf <- readr::read_rds(
     here::here(
     "out/dados_consolidados/balancetes/quadrimestral/balancete_uf_quadrimestral.rds"
   )
-) %>% 
-    mutate(
-    ano = clock::get_year(date),
-    mes = clock::get_month(date),
-    quadrimestre = case_when(
-      mes == 2 ~ 1,
-      mes == 4 ~ 1,
-      mes == 6 ~ 2,
-      mes == 8 ~ 2,
-      mes == 10 ~ 3,
-      mes == 12 ~ 3
-    ),
-    .after = date
-  )
-
-
+)
 
 balancete_mun <- readr::read_rds(
-  here::here('out/dados_consolidados/balancetes/quadrimestral/balancete_mun_quadrimestral.rds')
-) %>% 
-      mutate(
-    ano = clock::get_year(date),
-    mes = clock::get_month(date),
-    quadrimestre = case_when(
-      mes == 2 ~ 1,
-      mes == 4 ~ 1,
-      mes == 6 ~ 2,
-      mes == 8 ~ 2,
-      mes == 10 ~ 3,
-      mes == 12 ~ 3
-    ),
-    .after = date
+    here::here(
+    "out/dados_consolidados/balancetes/quadrimestral/balancete_mun_quadrimestral.rds"
   )
+)
 
 
 ```
 
 Estado do Ceará
 =======================================================================
-
 
 Column {.sidebar}
 -----------------------------------------------------------------------
@@ -109,7 +69,7 @@ ano <- indicadores %>%
 quadrimestre <- indicadores %>% 
   count(quadrimestre)
 
-selectInput('indicador_fiscal', 'Indicadores Fiscais', names(indicadores)[6:11])
+selectInput('indicador_fiscal', 'Indicadores Fiscais', names(indicadores)[7:11])
 
 selectInput('ano', 'Ano', ano$ano, selected = '2021')
 
@@ -127,16 +87,58 @@ Column {data-width=650}
 ```{r table_ce, cache=FALSE}
 
 renderTable({
-    balancete_uf %>% 
-    select(-date, -mes) %>% 
-    mutate(quadrimestre = as.character(quadrimestre)) %>% 
-    filter(ano == input$ano, quadrimestre == input$quad) %>% 
-    rename(
-      Ano = ano,
-      Quadrimestre = quadrimestre,
-      Conta = conta,
-      Valor = valor
+  
+    data_atual <- clock::date_build(
+    year = as.numeric(input$ano),
+    month = case_when(
+      input$quad == "1" ~ 4,
+      input$quad == "2" ~ 8,
+      input$quad == "3" ~ 12
     )
+  )
+
+  data_defasada <- clock::add_months(data_atual, -12)
+
+  variacao_uf <- balancete_uf %>%
+    filter(
+      date %in% c(data_atual, data_defasada)
+    ) %>%
+    group_by(conta) %>%
+    mutate(
+      variacao = (valor / lag(valor)) - 1
+    ) %>% 
+    ungroup() %>% 
+    drop_na(variacao) %>% 
+    select(conta, variacao)
+  
+    balancete_uf %>%
+    filter(
+      date %in% c(data_atual, data_defasada)
+    ) %>%
+    mutate(
+      date = format(date, 'p%Y%m'),
+      quadrimestre = as.character(quadrimestre)
+      ) %>%
+    select(conta, date, valor) %>%
+    pivot_wider(
+      names_from = date, 
+      values_from = valor
+      ) %>%
+    left_join(variacao_uf, by = 'conta') %>%
+    mutate(
+      variacao = scales::percent(
+        variacao, 
+        accuracy = 0.01,
+        big.mark = '.', 
+        decimal.mark = ',')
+    ) %>% 
+    mutate(
+      across(
+        !c(conta, variacao), 
+        ~scales::comma(., prefix = 'R$ ', big.mark = '.', decimal.mark = ','))
+      ) %>% 
+    rename(Conta = conta, 'Var.%' = variacao) 
+  
 })
 
 ```
@@ -146,7 +148,16 @@ Column {data-width=350}
 
 ### Chart B
 
-```{r}
+```{r plot_1, cache=FALSE}
+
+shiny::renderPlot({
+  
+  indicadores %>% 
+  filter(ano == input$ano, quadrimestre == input$quad) %>% 
+  ggplot(aes_string(x = input$indicador_fiscal)) +
+  geom_histogram(bins = 5)
+  
+})
 
 
 ```
@@ -156,6 +167,8 @@ Column {data-width=350}
 ```{r}
 
 ```
+
+
 
 Municípios Cearenses
 =======================================================================
@@ -177,7 +190,7 @@ ano <- indicadores %>%
 quadrimestre <- indicadores %>% 
   count(quadrimestre)
 
-selectInput('indicador_fiscal_mun', 'Indicadores Fiscais', names(indicadores)[6:11])
+selectInput('indicador_fiscal_mun', 'Indicadores Fiscais', names(indicadores)[7:11])
 
 selectInput('mun', 'Municípios Cearenses', nome_mun$mun, selected = 'Fortaleza')
 
@@ -189,29 +202,68 @@ selectInput('quad_mun', 'Quadrimestre', quadrimestre$quadrimestre)
 
 
 
-Column {data-width=650}
+Column {data-width=600}
 -----------------------------------------------------------------------
 
 ### Balancete dos Municípios Cearenses
 
 ```{r table_mun, cache=FALSE}
 
+
 renderTable({
-    balancete_mun %>% 
-    mutate(quadrimestre = as.character(quadrimestre)) %>% 
-    filter(
-      ano == input$ano_mun, 
-      quadrimestre == input$quad_mun,
-      mun == input$mun
-      ) %>% 
-    select(conta, valor) %>%
-    rename(
-      # Ano = ano,
-      # Quadrimestre = quadrimestre,
-      # 'Município' = mun,
-      Conta = conta,
-      Valor = valor
+  data_atual <- clock::date_build(
+    year = as.numeric(input$ano_mun),
+    month = case_when(
+      input$quad_mun == "1" ~ 4,
+      input$quad_mun == "2" ~ 8,
+      input$quad_mun == "3" ~ 12
     )
+  )
+
+  data_defasada <- clock::add_months(data_atual, -12)
+
+  variacao_mun <- balancete_mun %>%
+    filter(
+      date %in% c(data_atual, data_defasada),
+      mun == input$mun
+    ) %>%
+    group_by(conta) %>%
+    mutate(
+      variacao = (valor / lag(valor)) - 1
+    ) %>% 
+    ungroup() %>% 
+    drop_na(variacao) %>% 
+    select(conta, variacao)
+    
+
+  balancete_mun %>%
+    filter(
+      date %in% c(data_atual, data_defasada),
+      mun == input$mun
+    ) %>%
+    mutate(
+      date = format(date, 'p%Y%m'),
+      quadrimestre = as.character(quadrimestre)
+      ) %>%
+    select(conta, date, valor) %>%
+    pivot_wider(
+      names_from = date, 
+      values_from = valor
+      ) %>%
+    left_join(variacao_mun, by = 'conta') %>%
+    mutate(
+      variacao = scales::percent(
+        variacao, 
+        accuracy = 0.01,
+        big.mark = '.', 
+        decimal.mark = ',')
+    ) %>% 
+    mutate(
+      across(
+        !c(conta, variacao), 
+        ~scales::comma(., prefix = 'R$ ', big.mark = '.', decimal.mark = ','))
+      ) %>% 
+    rename(Conta = conta, 'Var.%' = variacao) 
 })
 
 ```
@@ -221,8 +273,16 @@ Column {data-width=350}
 
 ### Chart B
 
-```{r}
+```{r plot_mun_1, cache=FALSE}
 
+shiny::renderPlot({
+  
+  indicadores %>% 
+  filter(ano == input$ano, quadrimestre == input$quad) %>% 
+  ggplot(aes_string(x = input$indicador_fiscal)) +
+  geom_histogram(bins = 5)
+  
+})
 
 ```
 
