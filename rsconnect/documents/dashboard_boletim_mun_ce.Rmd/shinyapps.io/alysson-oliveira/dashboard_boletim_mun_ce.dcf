@@ -1,0 +1,13 @@
+name: dashboard_boletim_mun_ce
+title: dashboard_boletim_mun_ce
+username:
+account: alysson-oliveira
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 4499667
+bundleId: 4932082
+url: https://alysson-oliveira.shinyapps.io/dashboard_boletim_mun_ce/
+when: 1629201367.7093
+lastSyncTime: 1629201367.7093
+asMultiple: FALSE
+asStatic: FALSE

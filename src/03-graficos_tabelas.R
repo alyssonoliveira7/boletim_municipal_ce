@@ -72,3 +72,11 @@ balancete_mun %>%
     values_from = valor,
   ) %>% view
 
+# Histogramas --------------------------------------------------------
+
+indicadores %>% 
+  ggplot(aes(independecia_fiscal))
+
+
+
+

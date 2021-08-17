@@ -3,19 +3,33 @@ title: "Boletim Fiscal dos Municípios Cearenses"
 runtime: shiny
 output: 
   flexdashboard::flex_dashboard:
+    logo: 
     orientation: columns
     vertical_layout: fill
+    theme:
+      bootswatch: lumen
+      bg: "#FFFFFF"
+      fg: "#000000" 
+      primary: "#2FA4E7"
+      secondary: "#E9ECEF"
+      success: "#73A839"
+      info: "#033C73"
+      base_font: !expr bslib::font_google("Prompt")
+      code_font: !expr bslib::font_google("JetBrains Mono")
 ---
 
 ```{r setup, include = FALSE}
-knitr::opts_chunk$set(cache=TRUE,
-                      message=FALSE, warning=FALSE,
-                      fig.path='figs/',
-                      cache.path = '_cache/',
-                      fig.process = function(x) {
-                      x2 = sub('-\\d+([.][a-z]+)$', '\\1', x)
-                      if (file.rename(x, x2)) x2 else x
-                      })
+knitr::opts_chunk$set(
+  cache = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.path = "figs/",
+  cache.path = "_cache/",
+  fig.process = function(x) {
+    x2 <- sub("-\\d+([.][a-z]+)$", "\\1", x)
+    if (file.rename(x, x2)) x2 else x
+  }
+)
 ```
 
 ```{r loadlibaries, include=FALSE}
@@ -25,6 +39,17 @@ library(tidyverse)
 library(clock)
 library(shiny)
 library(scales)
+library(DT)
+
+bslib::bs_themer()
+
+thematic::thematic_rmd(
+  font = "auto",
+  # To get the dark bg on the geom_raster()
+  sequential = thematic::sequential_gradient(fg_low = FALSE, fg_weight = 0, bg_weight = 1)
+)
+
+theme_set(theme_bw(base_size = 20))
 
 ```
 
@@ -69,11 +94,14 @@ ano <- indicadores %>%
 quadrimestre <- indicadores %>% 
   count(quadrimestre)
 
+sliderInput("contact_rate", "Set contact rate", value = 5, min = 0, max = 30)
+
 selectInput('indicador_fiscal', 'Indicadores Fiscais', names(indicadores)[7:11])
 
 selectInput('ano', 'Ano', ano$ano, selected = '2021')
 
 selectInput('quad', 'Quadrimestre', quadrimestre$quadrimestre)
+
 
 ```
 
@@ -271,7 +299,7 @@ renderTable({
 Column {data-width=350}
 -----------------------------------------------------------------------
 
-### Chart B
+### Ano Corrente
 
 ```{r plot_mun_1, cache=FALSE}
 
@@ -286,9 +314,46 @@ shiny::renderPlot({
 
 ```
 
-### Chart C
+### Mesmo Período do Ano Anterior
 
 ```{r}
 
 ```
+
+
+Indicadores
+=======================================================================
+
+```{r}
+
+datatable(
+  indicadores %>% select(-mes),
+  extensions = "Buttons",
+  options = list(
+    dom = "Bfrtip",
+    buttons = c("copy", "csv", "excel", "print", "pdf")
+  ),
+  rownames = FALSE
+)
+
+```
+
+Balancetes Municipais
+=======================================================================
+
+```{r balancetes_download}
+
+datatable(
+  balancete_mun %>% select(-mes),
+  extensions = "Buttons",
+  options = list(
+    dom = "Bfrtip",
+    buttons = c("copy", "csv", "excel", "print", "pdf")
+  ),
+  rownames = FALSE
+)
+
+```
+
+
 
