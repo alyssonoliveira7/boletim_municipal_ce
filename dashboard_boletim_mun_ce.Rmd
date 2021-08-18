@@ -3,7 +3,7 @@ title: "Boletim Fiscal dos Municípios Cearenses"
 runtime: shiny
 output: 
   flexdashboard::flex_dashboard:
-    logo: 
+    logo: img/logo_ipece_2.png
     orientation: columns
     vertical_layout: fill
     theme:
@@ -18,7 +18,12 @@ output:
       code_font: !expr bslib::font_google("JetBrains Mono")
 ---
 
+<script>
+$('.navbar-logo').wrap('<a href="https://www.ipece.ce.gov.br/" target=_blank>');
+</script>
+
 ```{r setup, include = FALSE}
+
 knitr::opts_chunk$set(
   cache = TRUE,
   message = FALSE,
@@ -40,6 +45,7 @@ library(clock)
 library(shiny)
 library(scales)
 library(DT)
+library(plotly)
 
 bslib::bs_themer()
 
@@ -49,7 +55,7 @@ thematic::thematic_rmd(
   sequential = thematic::sequential_gradient(fg_low = FALSE, fg_weight = 0, bg_weight = 1)
 )
 
-theme_set(theme_bw(base_size = 20))
+theme_set(theme_bw(base_size = 15))
 
 ```
 
@@ -72,7 +78,6 @@ balancete_mun <- readr::read_rds(
   )
 )
 
-
 ```
 
 Estado do Ceará
@@ -83,7 +88,7 @@ Column {.sidebar}
 
 ### Parâmetros
 
-```{r}
+```{r parametros_uf}
 
 nome_mun <- indicadores %>% 
   count(mun)
@@ -174,25 +179,38 @@ renderTable({
 Column {data-width=350}
 -----------------------------------------------------------------------
 
-### Chart B
+### Período Corrente
 
 ```{r plot_1, cache=FALSE}
 
-shiny::renderPlot({
+plotly::renderPlotly({
   
-  indicadores %>% 
+  g_indicadores <- indicadores %>% 
   filter(ano == input$ano, quadrimestre == input$quad) %>% 
   ggplot(aes_string(x = input$indicador_fiscal)) +
   geom_histogram(bins = 5)
+  
+  plotly::ggplotly(g_indicadores)
   
 })
 
 
 ```
 
-### Chart C
+### Mesmo Período do Ano Anterior
 
-```{r}
+```{r plot_2, cache=FALSE}
+
+plotly::renderPlotly({
+  
+  g_indicadores2 <- indicadores %>% 
+  filter(ano == input$ano, quadrimestre == input$quad) %>% 
+  ggplot(aes_string(x = input$indicador_fiscal)) +
+  geom_histogram(bins = 5)
+  
+  plotly::ggplotly(g_indicadores2)
+  
+})
 
 ```
 
@@ -207,7 +225,7 @@ Column {.sidebar}
 
 ### Parâmetros
 
-```{r}
+```{r parametros}
 
 nome_mun <- indicadores %>% 
   count(mun)
@@ -236,7 +254,6 @@ Column {data-width=600}
 ### Balancete dos Municípios Cearenses
 
 ```{r table_mun, cache=FALSE}
-
 
 renderTable({
   data_atual <- clock::date_build(
@@ -299,16 +316,22 @@ renderTable({
 Column {data-width=350}
 -----------------------------------------------------------------------
 
-### Ano Corrente
+### Período Corrente
 
 ```{r plot_mun_1, cache=FALSE}
 
-shiny::renderPlot({
+plotly::renderPlotly({
   
-  indicadores %>% 
+  g1 <- indicadores %>% 
   filter(ano == input$ano, quadrimestre == input$quad) %>% 
-  ggplot(aes_string(x = input$indicador_fiscal)) +
+  ggplot(aes_string(x = input$indicador_fiscal_mun)) +
   geom_histogram(bins = 5)
+  
+  grafico1 <- plotly::ggplotly(g1)
+  
+  grafico1
+  
+
   
 })
 
@@ -316,7 +339,25 @@ shiny::renderPlot({
 
 ### Mesmo Período do Ano Anterior
 
-```{r}
+```{r plot_mun_2, cache=FALSE}
+
+
+renderPlotly(
+  {
+    g2 <- indicadores %>% 
+        filter(ano == input$ano_mun, quadrimestre == input$quad_mun) %>% 
+        ggplot(aes_string(x = input$indicador_fiscal_mun)) +
+        geom_histogram(bins = 5)
+    
+    grafico2 <- plotly::ggplotly(g2)
+    
+    grafico2
+    
+  }
+)
+
+
+
 
 ```
 
@@ -324,10 +365,10 @@ shiny::renderPlot({
 Indicadores
 =======================================================================
 
-```{r}
+```{r indicaores_download}
 
-datatable(
-  indicadores %>% select(-mes),
+DT::datatable(
+  indicadores %>% select(-ano, -quadrimestre, -mes),
   extensions = "Buttons",
   options = list(
     dom = "Bfrtip",
@@ -343,14 +384,23 @@ Balancetes Municipais
 
 ```{r balancetes_download}
 
-datatable(
-  balancete_mun %>% select(-mes),
+DT::datatable(
+  balancete_mun %>%
+    select(-mes) %>%
+    mutate(
+      valor = scales::comma(valor, accuracy = 0.01, big.mark = ".", decimal.mark = ","),
+      ano = as.factor(ano),
+      quadrimestre = as.factor(quadrimestre)
+    ),
   extensions = "Buttons",
   options = list(
     dom = "Bfrtip",
     buttons = c("copy", "csv", "excel", "print", "pdf")
   ),
-  rownames = FALSE
+  rownames = FALSE,
+  filter = list(
+    position = "top", clear = FALSE
+  )
 )
 
 ```

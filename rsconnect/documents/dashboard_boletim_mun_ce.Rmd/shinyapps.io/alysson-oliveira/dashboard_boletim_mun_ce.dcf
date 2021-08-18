@@ -5,9 +5,9 @@ account: alysson-oliveira
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 4499667
-bundleId: 4932082
+bundleId: 4933228
 url: https://alysson-oliveira.shinyapps.io/dashboard_boletim_mun_ce/
-when: 1629201367.7093
-lastSyncTime: 1629201367.7093
+when: 1629219106.55783
+lastSyncTime: 1629219106.55783
 asMultiple: FALSE
 asStatic: FALSE
