@@ -3,14 +3,15 @@ title: "Boletim Fiscal dos Municípios Cearenses"
 runtime: shiny
 output: 
   flexdashboard::flex_dashboard:
-    logo: img/logo_ipece_2.png
+    logo: img/logo_ipece.png
     orientation: columns
     vertical_layout: fill
     theme:
       bootswatch: lumen
       bg: "#FFFFFF"
       fg: "#000000" 
-      primary: "#2FA4E7"
+      warning: "#f5903b"
+      primary: "#111384"
       secondary: "#E9ECEF"
       success: "#73A839"
       info: "#033C73"
@@ -21,6 +22,26 @@ output:
 <script>
 $('.navbar-logo').wrap('<a href="https://www.ipece.ce.gov.br/" target=_blank>');
 </script>
+
+<style>
+.active {
+  font-size:14px;
+}
+</style>
+
+
+```{css}
+.value-box {
+  height: 80px;
+  width: 120px;
+  margin: 0 0 11px 0;
+  white-space: nowrap;
+  padding: 0px;
+}
+
+```
+
+
 
 ```{r setup, include = FALSE}
 
@@ -47,7 +68,7 @@ library(scales)
 library(DT)
 library(plotly)
 
-bslib::bs_themer()
+#bslib::bs_themer()
 
 thematic::thematic_rmd(
   font = "auto",
@@ -55,7 +76,7 @@ thematic::thematic_rmd(
   sequential = thematic::sequential_gradient(fg_low = FALSE, fg_weight = 0, bg_weight = 1)
 )
 
-theme_set(theme_bw(base_size = 15))
+theme_set(theme_bw(base_size = 12))
 
 ```
 
@@ -77,6 +98,8 @@ balancete_mun <- readr::read_rds(
     "out/dados_consolidados/balancetes/quadrimestral/balancete_mun_quadrimestral.rds"
   )
 )
+
+tamanho_fonte <- "font-size: 14px;"
 
 ```
 
@@ -109,7 +132,6 @@ selectInput('quad', 'Quadrimestre', quadrimestre$quadrimestre)
 
 
 ```
-
 
 
 Column {data-width=650}
@@ -214,13 +236,11 @@ plotly::renderPlotly({
 
 ```
 
-
-
 Municípios Cearenses
 =======================================================================
 
 
-Column {.sidebar}
+Column {.sidebar} 
 -----------------------------------------------------------------------
 
 ### Parâmetros
@@ -246,9 +266,201 @@ selectInput('quad_mun', 'Quadrimestre', quadrimestre$quadrimestre)
 
 ```
 
+Column {data-width=70}
+-----------------------------------------------------------------------
 
 
-Column {data-width=600}
+### Indep. Fiscal {.value-box}
+
+```{r indic1, cache=FALSE}
+
+renderValueBox({
+  ind_fical <- indicadores %>%
+    filter(
+      ano == input$ano_mun,
+      quadrimestre == input$quad_mun,
+      mun == input$mun
+    ) %>%
+    select("independecia_fiscal") %>%
+    pull()
+
+  ind_fical_pc <- scales::percent(
+    ind_fical,
+    accuracy = 0.01,
+    big.mark = ".",
+    decimal.mark = ","
+  )
+
+  valueBox(
+    value = tags$p(ind_fical_pc, style = tamanho_fonte),
+    #icon = "fa-area-chart",
+    color = if (ind_fical >= 0) "primary" else "warning"
+  )
+})
+
+
+```
+
+
+### Custeio {.value-box}
+
+```{r indic2, cache=FALSE}
+
+renderValueBox({
+  ind_fical <- indicadores %>%
+    filter(
+      ano == input$ano_mun,
+      quadrimestre == input$quad_mun,
+      mun == input$mun
+    ) %>%
+    select("custeio_total") %>%
+    pull()
+
+
+  ind_fical_pc <- scales::percent(
+    ind_fical,
+    accuracy = 0.01,
+    big.mark = ".",
+    decimal.mark = ","
+  )
+
+  valueBox(
+    value = tags$p(ind_fical_pc, style = tamanho_fonte),
+    #icon = "fa-area-chart",
+    color = if (ind_fical >= 0) "primary" else "warning"
+  )
+})
+
+```
+
+
+### Invest. {.value-box}
+
+```{r indic3, cache=FALSE}
+
+renderValueBox({
+  ind_fical <- indicadores %>%
+    filter(
+      ano == input$ano_mun,
+      quadrimestre == input$quad_mun,
+      mun == input$mun
+    ) %>%
+    select("investimentos_rec_prop") %>%
+    pull()
+
+  ind_fical_pc <- scales::percent(
+    ind_fical,
+    accuracy = 0.01,
+    big.mark = ".",
+    decimal.mark = ","
+  )
+
+  valueBox(
+    value = tags$p(ind_fical_pc, style = tamanho_fonte),
+    #icon = "fa-area-chart",
+    color = if (ind_fical >= 0) "primary" else "warning"
+  )
+})
+
+
+```
+
+### Ser.Div./RCL {.value-box}
+
+```{r indic4, cache=FALSE}
+
+renderValueBox({
+  ind_fical <- indicadores %>%
+    filter(
+      ano == input$ano_mun,
+      quadrimestre == input$quad_mun,
+      mun == input$mun
+    ) %>%
+    select("servico_divida_rcl") %>%
+    pull()
+
+  ind_fical_pc <- scales::percent(
+    ind_fical,
+    accuracy = 0.01,
+    big.mark = ".",
+    decimal.mark = ","
+  )
+
+  valueBox(
+    value = tags$p(ind_fical_pc, style = tamanho_fonte),
+    #icon = "fa-area-chart",
+    color = if (ind_fical >= 0) "primary" else "warning"
+  )
+})
+
+
+```
+
+### Desp. Pessoal {.value-box}
+
+```{r indic5, cache=FALSE}
+
+renderValueBox({
+  ind_fical <- indicadores %>%
+    filter(
+      ano == input$ano_mun,
+      quadrimestre == input$quad_mun,
+      mun == input$mun
+    ) %>%
+    select("desp_pessoal") %>%
+    pull()
+
+  ind_fical_pc <- scales::percent(
+    ind_fical,
+    accuracy = 0.01,
+    big.mark = ".",
+    decimal.mark = ","
+  )
+
+  valueBox(
+    value = tags$p(ind_fical_pc, style = tamanho_fonte),
+    #icon = "fa-area-chart",
+    color = if (ind_fical >= 0) "primary" else "warning"
+  )
+})
+
+
+```
+
+
+### DCL/RCL {.value-box}
+
+```{r indic6, cache=FALSE}
+
+renderValueBox({
+  ind_fical <- indicadores %>%
+    filter(
+      ano == input$ano_mun,
+      quadrimestre == input$quad_mun,
+      mun == input$mun
+    ) %>%
+    select("dcl_rcl") %>%
+    pull()
+
+  ind_fical_pc <- scales::percent(
+    ind_fical,
+    accuracy = 0.01,
+    big.mark = ".",
+    decimal.mark = ","
+  )
+
+  valueBox(
+    value = tags$p(ind_fical_pc, style = tamanho_fonte),
+    #icon = "fa-area-chart",
+    color = if (ind_fical >= 0) "primary" else "warning"
+  )
+})
+
+
+```
+
+
+Column {data-width=650}
 -----------------------------------------------------------------------
 
 ### Balancete dos Municípios Cearenses
@@ -313,7 +525,7 @@ renderTable({
 
 ```
 
-Column {data-width=350}
+Column {data-width=320}
 -----------------------------------------------------------------------
 
 ### Período Corrente
